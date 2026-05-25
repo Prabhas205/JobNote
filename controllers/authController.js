@@ -21,7 +21,7 @@ const sendTokenResponse = (user, statusCode, res) => {
     });
 };
 
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
     try {
 
         const { name, email, password, role } = req.body;
@@ -77,14 +77,11 @@ export const register = async (req, res) => {
             });
         }
 
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+        next(error);
     }
 };
 
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
     try {
 
         const { email, password } = req.body;
@@ -145,15 +142,12 @@ export const login = async (req, res) => {
         sendTokenResponse(user, 200, res);
 
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+        next(error);
     }
 };
 
 
-export const getMe = async (req, res) => {
+export const getMe = async (req, res, next) => {
     try {
 
         // req.user._id set by protect middleware
@@ -167,15 +161,12 @@ export const getMe = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+        next(error);
     }
 };
 
 
-export const updatePassword = async (req, res) => {
+export const updatePassword = async (req, res, next) => {
     try {
 
         const { currentPassword, newPassword } = req.body;
@@ -219,14 +210,11 @@ export const updatePassword = async (req, res) => {
         sendTokenResponse(user, 200, res);
 
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+        next(error);
     }
 };
 
-export const getAllUsers = async (req, res) => {
+export const getAllUsers = async (req, res, next) => {
     try {
 
         const users = await User.find();
@@ -239,9 +227,6 @@ export const getAllUsers = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+        next(error);
     }
 };
