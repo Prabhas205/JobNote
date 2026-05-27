@@ -1,12 +1,7 @@
-// middleware/requestLogger.js
 const requestLogger = (req, res, next) => {
-
-    // Skip logging HEAD requests — just noise
     if (req.method === 'HEAD') {
         return next();
-        // proceed but don't log
     }
-
     const start = Date.now();
     const timestamp = new Date()
         .toISOString()
