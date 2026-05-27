@@ -4,6 +4,7 @@ import {
     register,
     login,
     getMe,
+    updateMe,
     updatePassword,
     getAllUsers,
 } from '../controllers/authController.js';
@@ -20,6 +21,7 @@ router.post('/login', login);
 // ─── PROTECTED ROUTES ───
 // Token required
 router.get('/me', protect, getMe);
+router.put('/me', protect, updateMe);
 router.put('/updatepassword', protect, updatePassword);
 
 

@@ -1,7 +1,26 @@
 import { Link } from 'react-router-dom';
 
-function JobCard({ job, onApply }) {
-    const isActive = job.isActive !== false; // defaults to true
+function JobCard({ 
+    title, 
+    company, 
+    location, 
+    jobType, 
+    workMode, 
+    experience, 
+    salary, 
+    skills = [], 
+    isActive = true, 
+    views, 
+    jobId, 
+    description, 
+    onApply 
+}) {
+    // Format salary logic
+    const formatSalary = (sal) => {
+        if (!sal || !sal.isPublic) return 'Not disclosed';
+        if (sal.min === sal.max) return `${(sal.min / 100000).toFixed(1)}L`;
+        return `${(sal.min / 100000).toFixed(1)}L - ${(sal.max / 100000).toFixed(1)}L`;
+    };
 
     return (
         <div style={{
@@ -18,12 +37,13 @@ function JobCard({ job, onApply }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                     <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', margin: '0 0 8px 0' }}>
-                        {job.title}
+                        {title}
+                        {isActive && <span style={{ marginLeft: '8px', fontSize: '12px', background: '#e0e7ff', color: '#4f46e5', padding: '2px 8px', borderRadius: '12px' }}>Hiring</span>}
                     </h3>
                     <p style={{ color: '#6b7280', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>🏢 {job.company?.name || job.company || 'Unknown Company'}</span>
+                        <span>🏢 {company || 'Unknown Company'}</span>
                         <span>·</span>
-                        <span>📍 {job.location || 'Remote'}</span>
+                        <span>📍 {location || 'Remote'}</span>
                     </p>
                 </div>
                 <span style={{
@@ -39,21 +59,34 @@ function JobCard({ job, onApply }) {
             </div>
 
             <p style={{ color: '#4b5563', fontSize: '14px', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {job.description}
+                {description}
             </p>
 
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {skills.map(skill => (
+                    <span key={skill} style={{ background: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', color: '#4b5563' }}>
+                        {skill}
+                    </span>
+                ))}
+            </div>
+
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                <span style={{ background: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', color: '#4b5563' }}>
-                    💰 {job.salary ? `$${job.salary}` : 'Not specified'}
+                <span style={{ background: '#fef3c7', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', color: '#92400e' }}>
+                    💰 {formatSalary(salary)}
                 </span>
                 <span style={{ background: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', color: '#4b5563' }}>
-                    🕒 {job.jobType || 'Full-time'}
+                    🕒 {jobType || 'Full-time'}
                 </span>
+                {workMode && (
+                    <span style={{ background: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', color: '#4b5563' }}>
+                        💼 {workMode}
+                    </span>
+                )}
             </div>
 
             <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid #f3f4f6' }}>
                 <Link
-                    to={`/jobs/${job._id ?? job.id}`}
+                    to={`/jobs/${jobId}`}
                     style={{
                         padding: '10px 16px',
                         background: '#eff6ff',

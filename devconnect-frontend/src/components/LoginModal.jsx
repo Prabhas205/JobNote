@@ -1,6 +1,6 @@
-// src/components/LoginModal.jsx
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAppDispatch, useAppSelector } from '../store/hooks.js';
+import { loginUser, registerUser, clearAuthError, selectAuthLoading, selectAuthError } from '../store/slices/authSlice.js';
 
 function LoginModal({ isOpen, onClose, defaultTab = 'login' }) {
 
@@ -12,7 +12,9 @@ function LoginModal({ isOpen, onClose, defaultTab = 'login' }) {
         role: 'user',
     });
 
-    const { login, register, loading, error, clearError } = useAuth();
+    const dispatch = useAppDispatch();
+    const loading = useAppSelector(selectAuthLoading);
+    const error = useAppSelector(selectAuthError);
     const firstInputRef = useRef(null);
 
     // Focus first input when modal opens
@@ -24,9 +26,9 @@ function LoginModal({ isOpen, onClose, defaultTab = 'login' }) {
 
     // Clear error when switching tabs
     useEffect(() => {
-        clearError();
+        dispatch(clearAuthError());
         setFormData({ name: '', email: '', password: '', role: 'user' });
-    }, [activeTab]);
+    }, [activeTab, dispatch]);
 
     // Close on Escape key
     useEffect(() => {
@@ -49,23 +51,21 @@ function LoginModal({ isOpen, onClose, defaultTab = 'login' }) {
         e.preventDefault();
         // prevent page refresh
 
-        let result;
-
-        if (activeTab === 'login') {
-            result = await login(formData.email, formData.password);
-        } else {
-            result = await register(
-                formData.name,
-                formData.email,
-                formData.password,
-                formData.role,
-            );
-        }
-
-        if (result.success) {
+        try {
+            if (activeTab === 'login') {
+                await dispatch(loginUser({ email: formData.email, password: formData.password })).unwrap();
+            } else {
+                await dispatch(registerUser({
+                    name: formData.name,
+                    email: formData.email,
+                    password: formData.password,
+                    role: formData.role,
+                })).unwrap();
+            }
             onClose(); // close modal on success
+        } catch (err) {
+            // error shows automatically from redux state
         }
-        // if failed — error shows automatically from context
     };
 
     // Input style — reused for all inputs

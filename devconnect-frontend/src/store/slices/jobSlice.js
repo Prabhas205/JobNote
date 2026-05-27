@@ -1,7 +1,6 @@
 // src/store/slices/jobSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-
-const BASE_URL = 'http://localhost:3000/api';
+import api from '../../services/api.js';
 
 
 // ════════════════════════════════════════
@@ -18,11 +17,8 @@ export const fetchJobs = createAsyncThunk(
                 if (val) params.append(key, val);
             });
 
-            const res = await fetch(`${BASE_URL}/jobs?${params}`);
-            const data = await res.json();
-
-            if (!res.ok) return rejectWithValue(data.message);
-            return data;
+            const response = await api.get(`/jobs?${params}`);
+            return response.data;
 
         } catch (error) {
             // Fallback fake data if API not running
@@ -69,12 +65,12 @@ export const fetchJobById = createAsyncThunk(
     'jobs/fetchById',
     async (id, { rejectWithValue }) => {
         try {
-            const res = await fetch(`${BASE_URL}/jobs/${id}`);
-            const data = await res.json();
-            if (!res.ok) return rejectWithValue(data.message);
-            return data.data;
+            const response = await api.get(`/jobs/${id}`);
+            return response.data.data;
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(
+                error.response?.data?.message || error.response?.data || error.message
+            );
         }
     }
 );
@@ -83,29 +79,17 @@ export const fetchJobById = createAsyncThunk(
 // ─── CREATE JOB ───
 export const createJob = createAsyncThunk(
     'jobs/create',
-    async (jobData, { getState, rejectWithValue }) => {
+    async (jobData, thunkAPI) => {
         try {
-            const token = getState().auth.token;
-
-            const res = await fetch(`${BASE_URL}/jobs`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(jobData),
-            });
-            const data = await res.json();
-
-            if (!res.ok) {
-                return rejectWithValue(
-                    data.message ?? data.errors?.join(', ') ?? 'Failed to create job'
-                );
-            }
-            return data.data;
+            // Token is automatically attached by our api interceptor!
+            const response = await api.post('/jobs', jobData);
+            return response.data.data;
 
         } catch (error) {
-            return rejectWithValue(error.message);
+            const data = error.response?.data;
+            const message = data?.message || (data?.errors ? data.errors.join(', ') : 'Failed to create job');
+            
+            return thunkAPI.rejectWithValue(message);
         }
     }
 );
@@ -116,23 +100,14 @@ export const applyToJob = createAsyncThunk(
     'jobs/apply',
     async ({ jobId, resumeUrl, coverLetter }, { getState, rejectWithValue }) => {
         try {
-            const token = getState().auth.token;
-
-            const res = await fetch(`${BASE_URL}/jobs/${jobId}/apply`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ resumeUrl, coverLetter }),
-            });
-            const data = await res.json();
-
-            if (!res.ok) return rejectWithValue(data.message);
-            return data.data;
+            const response = await api.post(`/jobs/${jobId}/apply`, { resumeUrl, coverLetter });
+            return response.data.data;
 
         } catch (error) {
-            return rejectWithValue(error.message);
+            const data = error.response?.data;
+            const message = data?.message || (data?.errors ? data.errors.join(', ') : 'Failed to apply to job');
+
+            return rejectWithValue(message);
         }
     }
 );
@@ -143,18 +118,13 @@ export const fetchMyApplications = createAsyncThunk(
     'jobs/myApplications',
     async (_, { getState, rejectWithValue }) => {
         try {
-            const token = getState().auth.token;
-
-            const res = await fetch(`${BASE_URL}/jobs/my/applications`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
-
-            if (!res.ok) return rejectWithValue(data.message);
-            return data.data;
+            const response = await api.get('/jobs/my/applications');
+            return response.data.data;
 
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(
+                error.response?.data?.message || error.response?.data || error.message
+            );
         }
     }
 );

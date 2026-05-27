@@ -1,7 +1,9 @@
 // src/services/jobService.js
 // All API calls in one place — used by React Query
 
-const BASE_URL = 'http://localhost:3000/api';
+// src/services/jobService.js — use environment variable
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
+// ↑ Vite env variables must start with VITE_
 
 // Helper to get token
 const getToken = () => {
@@ -11,6 +13,8 @@ const getToken = () => {
         return null;
     }
 };
+
+
 
 // Helper for authenticated requests
 const authHeaders = () => ({

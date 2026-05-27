@@ -18,6 +18,8 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
 const PostJobPage = lazy(() => import('./pages/PostJobPage.jsx'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
+
 
 function AppContent() {
   return (
@@ -36,6 +38,12 @@ function AppContent() {
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           } />
 

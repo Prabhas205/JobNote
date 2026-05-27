@@ -1,10 +1,12 @@
-// src/components/ProtectedRoute.jsx
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAppSelector } from '../store/hooks.js';
+import { selectIsLoggedIn, selectUser, selectAuthLoading } from '../store/slices/authSlice.js';
 import Spinner from './Spinner.jsx';
 
 function ProtectedRoute({ children, allowedRoles = [] }) {
-    const { isLoggedIn, user, loading } = useAuth();
+    const isLoggedIn = useAppSelector(selectIsLoggedIn);
+    const user = useAppSelector(selectUser);
+    const loading = useAppSelector(selectAuthLoading);
 
     // Still checking auth state — show spinner
     if (loading) return <Spinner />;

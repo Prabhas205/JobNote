@@ -1,0 +1,12 @@
+# render.yaml — Render deployment config
+services:
+  - type: web
+    name: devconnect-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000

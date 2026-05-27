@@ -1,15 +1,17 @@
-// src/components/Navbar.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAppDispatch, useAppSelector } from '../store/hooks.js';
+import { selectIsLoggedIn, selectUser, logout } from '../store/slices/authSlice.js';
 
 function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);
-    const { isLoggedIn, user, logout } = useAuth();
+    const isLoggedIn = useAppSelector(selectIsLoggedIn);
+    const user = useAppSelector(selectUser);
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        logout();
+        dispatch(logout());
         setMenuOpen(false);
         navigate('/');
     };

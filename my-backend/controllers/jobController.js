@@ -1,212 +1,87 @@
 // controllers/jobController.js
-import JobPost from '../models/JobPost.js';
-import Company from '../models/Company.js';
-import Application from '../models/Application.js';
+// Add socket events to applyToJob and createJob
 
-// ─── GET ALL JOBS ───
+import JobPost from '../models/JobPost.js';
+import Application from '../models/Application.js';
+import Company from '../models/Company.js';
+
 export const getAllJobs = async (req, res) => {
     try {
-        const {
-            search, jobType, workMode,
-            experience, location,
-            page = 1, limit = 10,
-            sort = 'newest',
-        } = req.query;
-
-        const filter = { isActive: true };
-
-        if (jobType) filter.jobType = jobType;
-        if (workMode) filter.workMode = workMode;
-        if (experience) filter.experience = experience;
-        if (location) filter.location = { $regex: location, $options: 'i' };
-        if (search) filter.$text = { $search: search };
-
-        const sortObj = sort === 'newest' ? { createdAt: -1 }
-            : sort === 'oldest' ? { createdAt: 1 }
-                : sort === 'salary' ? { 'salary.max': -1 }
-                    : { createdAt: -1 };
-
-        const pageNum = Number(page);
-        const limitNum = Number(limit);
-
-        const [jobs, total] = await Promise.all([
-            JobPost.find(filter)
-                .populate('company', 'name logo location industry')
-                .populate('postedBy', 'name email')
-                .sort(sortObj)
-                .skip((pageNum - 1) * limitNum)
-                .limit(limitNum)
-                .select('-applicants'),
-
-            JobPost.countDocuments(filter),
-        ]);
-
-        res.json({
-            success: true,
-            count: jobs.length,
-            total,
-            pages: Math.ceil(total / limitNum),
-            page: pageNum,
-            data: jobs,
-        });
-
+        const jobs = await JobPost.find({ isActive: true }).populate('company', 'name logo location');
+        res.status(200).json({ success: true, count: jobs.length, total: jobs.length, pages: 1, data: jobs });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-// ─── GET SINGLE JOB ───
 export const getJobById = async (req, res) => {
     try {
         const job = await JobPost.findById(req.params.id)
-            .populate('company', 'name logo location website industry size')
+            .populate('company', 'name logo location')
             .populate('postedBy', 'name email');
-
-        if (!job) {
-            return res.status(404).json({
-                success: false,
-                message: 'Job not found',
-            });
-        }
-
-        // Increment views
-        job.views += 1;
-        await job.save({ validateBeforeSave: false });
-
-        res.json({ success: true, data: job });
-
+        if (!job) return res.status(404).json({ success: false, message: 'Job not found' });
+        res.status(200).json({ success: true, data: job });
     } catch (error) {
-        if (error.name === 'CastError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid job ID format',
-            });
-        }
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-// ─── CREATE JOB ───
-export const createJob = async (req, res) => {
-    try {
-        req.body.postedBy = req.user._id;
-
-        // Verify company exists
-        const company = await Company.findById(req.body.company);
-        if (!company) {
-            return res.status(404).json({
-                success: false,
-                message: 'Company not found — create company first',
-            });
-        }
-
-        // Verify company belongs to this user
-        if (
-            company.createdBy.toString() !== req.user._id.toString() &&
-            req.user.role !== 'admin'
-        ) {
-            return res.status(403).json({
-                success: false,
-                message: 'You can only post jobs for your own company',
-            });
-        }
-
-        const job = await JobPost.create(req.body);
-
-        await job.populate('company', 'name logo');
-        await job.populate('postedBy', 'name email');
-
-        res.status(201).json({
-            success: true,
-            message: 'Job posted successfully',
-            data: job,
-        });
-
-    } catch (error) {
-        if (error.name === 'ValidationError') {
-            const errors = Object.values(error.errors).map(e => e.message);
-            return res.status(400).json({ success: false, errors });
-        }
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-// ─── UPDATE JOB ───
 export const updateJob = async (req, res) => {
     try {
         let job = await JobPost.findById(req.params.id);
-
-        if (!job) {
-            return res.status(404).json({
-                success: false,
-                message: 'Job not found',
-            });
+        if (!job) return res.status(404).json({ success: false, message: 'Job not found' });
+        
+        if (job.postedBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Not authorized to update this job' });
         }
-
-        // Only poster or admin can update
-        if (
-            job.postedBy.toString() !== req.user._id.toString() &&
-            req.user.role !== 'admin'
-        ) {
-            return res.status(403).json({
-                success: false,
-                message: 'Not authorized to update this job',
-            });
-        }
-
-        job = await JobPost.findByIdAndUpdate(
-            req.params.id,
-            { $set: req.body },
-            { new: true, runValidators: true }
-        ).populate('company', 'name logo')
-            .populate('postedBy', 'name email');
-
-        res.json({
-            success: true,
-            message: 'Job updated',
-            data: job,
-        });
-
+        
+        job = await JobPost.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        res.status(200).json({ success: true, data: job });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-// ─── DELETE JOB ───
 export const deleteJob = async (req, res) => {
     try {
         const job = await JobPost.findById(req.params.id);
-
-        if (!job) {
-            return res.status(404).json({
-                success: false,
-                message: 'Job not found',
-            });
+        if (!job) return res.status(404).json({ success: false, message: 'Job not found' });
+        
+        if (job.postedBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete this job' });
         }
-
-        if (
-            job.postedBy.toString() !== req.user._id.toString() &&
-            req.user.role !== 'admin'
-        ) {
-            return res.status(403).json({
-                success: false,
-                message: 'Not authorized to delete this job',
-            });
-        }
-
-        await JobPost.findByIdAndDelete(req.params.id);
-
-        res.json({
-            success: true,
-            message: `Job "${job.title}" deleted`,
-        });
-
+        
+        await job.deleteOne();
+        res.status(200).json({ success: true, message: 'Job deleted' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-// ─── APPLY TO JOB ───
+export const getMyApplications = async (req, res) => {
+    try {
+        const applications = await Application.find({ applicant: req.user._id }).populate({
+            path: 'jobPost',
+            populate: { path: 'company', select: 'name logo' }
+        });
+        res.status(200).json({ success: true, count: applications.length, data: applications });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getJobStats = async (req, res) => {
+    try {
+        const stats = await JobPost.aggregate([
+            { $group: { _id: '$jobType', count: { $sum: 1 } } }
+        ]);
+        res.status(200).json({ success: true, data: stats });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ─── APPLY TO JOB — emit real-time notification ───
 export const applyToJob = async (req, res) => {
     try {
         const { coverLetter, resumeUrl } = req.body;
@@ -218,7 +93,9 @@ export const applyToJob = async (req, res) => {
             });
         }
 
-        const job = await JobPost.findById(req.params.id);
+        const job = await JobPost.findById(req.params.id)
+            .populate('postedBy', 'name email');
+
         if (!job) {
             return res.status(404).json({
                 success: false,
@@ -229,14 +106,7 @@ export const applyToJob = async (req, res) => {
         if (!job.isActive) {
             return res.status(400).json({
                 success: false,
-                message: 'This job is no longer accepting applications',
-            });
-        }
-
-        if (job.deadline && job.deadline < Date.now()) {
-            return res.status(400).json({
-                success: false,
-                message: 'Application deadline has passed',
+                message: 'Job is no longer active',
             });
         }
 
@@ -266,6 +136,33 @@ export const applyToJob = async (req, res) => {
         job.applicants.push(req.user._id);
         await job.save({ validateBeforeSave: false });
 
+        // ─── EMIT REAL-TIME NOTIFICATION ───
+        const io = req.app.get('io');
+        // ↑ get io instance we set in server.js
+
+        if (io) {
+            // Notify the employer who posted the job
+            io.to(`user:${job.postedBy._id}`).emit('newApplication', {
+                type: 'NEW_APPLICATION',
+                jobTitle: job.title,
+                applicant: req.user.name,
+                applicationId: application._id,
+                jobId: job._id,
+                message: `${req.user.name} applied to ${job.title}`,
+                timestamp: new Date(),
+            });
+            // ↑ only employer receives this notification
+
+            // Notify all users watching this job
+            io.to(`job:${job._id}`).emit('jobUpdate', {
+                type: 'NEW_APPLICANT',
+                jobId: job._id,
+                applicantCount: job.applicants.length,
+                message: 'New applicant just applied!',
+                timestamp: new Date(),
+            });
+        }
+
         res.status(201).json({
             success: true,
             message: 'Application submitted successfully!',
@@ -283,54 +180,75 @@ export const applyToJob = async (req, res) => {
     }
 };
 
-// ─── GET MY APPLICATIONS ───
-export const getMyApplications = async (req, res) => {
+
+// ─── CREATE JOB — emit to all connected users ───
+export const createJob = async (req, res) => {
     try {
-        const applications = await Application.find({
-            applicant: req.user._id,
-        })
-            .populate('jobPost', 'title location jobType salary isActive')
-            .populate('company', 'name logo')
-            .sort({ createdAt: -1 });
+        req.body.postedBy = req.user._id;
 
-        res.json({
-            success: true,
-            count: applications.length,
-            data: applications,
-        });
+        if (!req.body.company) {
+            return res.status(400).json({
+                success: false,
+                message: 'Company ID is required to post a job',
+            });
+        }
 
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+        const company = await Company.findById(req.body.company);
+        if (!company) {
+            return res.status(404).json({
+                success: false,
+                message: 'Company not found',
+            });
+        }
 
-// ─── GET JOB STATS ───
-export const getJobStats = async (req, res) => {
-    try {
-        const stats = await JobPost.aggregate([
-            { $match: { isActive: true } },
-            {
-                $group: {
-                    _id: '$jobType',
-                    total: { $sum: 1 },
-                    avgSalary: { $avg: '$salary.min' },
-                    maxSalary: { $max: '$salary.max' },
+        if (
+            company.createdBy.toString() !== req.user._id.toString() &&
+            req.user.role !== 'admin'
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: 'You can only post jobs for your own company',
+            });
+        }
+
+        const job = await JobPost.create(req.body);
+        await job.populate('company', 'name logo');
+        await job.populate('postedBy', 'name email');
+
+        // ─── EMIT NEW JOB TO ALL CONNECTED USERS ───
+        const io = req.app.get('io');
+
+        if (io) {
+            io.emit('newJob', {
+                // ↑ io.emit = broadcast to ALL connected users
+                type: 'NEW_JOB',
+                job: {
+                    _id: job._id,
+                    title: job.title,
+                    company: job.company?.name,
+                    location: job.location,
+                    jobType: job.jobType,
+                    workMode: job.workMode,
                 },
-            },
-            { $sort: { total: -1 } },
-        ]);
+                message: `New job posted: ${job.title} at ${job.company?.name}`,
+                timestamp: new Date(),
+            });
+        }
 
-        const total = await JobPost.countDocuments({ isActive: true });
-        const remote = await JobPost.countDocuments({
-            isActive: true, workMode: 'remote'
-        });
-
-        res.json({
+        res.status(201).json({
             success: true,
-            data: { total, remote, byJobType: stats },
+            message: 'Job posted successfully',
+            data: job,
         });
 
     } catch (error) {
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(e => e.message);
+            return res.status(400).json({ success: false, errors });
+        }
+        if (error.name === 'CastError') {
+            return res.status(400).json({ success: false, message: 'Invalid ID format provided' });
+        }
         res.status(500).json({ success: false, message: error.message });
     }
 };

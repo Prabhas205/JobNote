@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
     {
         name: {
             type: String,
-            requried: [true, 'Name is requied'],
+            required: [true, 'Name is required'],
             trim: true,
             minlength: [2, 'Name must be at least 2 characters'],
             maxlength: [50, 'Name cannot exceed 50 characters'],
@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
 
         email: {
             type: String,
-            requried: [true, 'Email is required'],
+            required: [true, 'Email is required'],
             unique: true,
             lowercase: true,
 
@@ -24,13 +24,13 @@ const userSchema = new mongoose.Schema(
 
         password: {
             type: String,
-            requried: [true, 'Password is required'],
+            required: [true, 'Password is required'],
             minlength: [6, 'Password must be at least 6 characters'],
             select: false,
         },
         role: {
             type: String,
-            enum: ['user', 'editor', 'admin'],
+            enum: ['user', 'employer', 'admin'],
             default: 'user',
         },
         isActive: {
@@ -40,25 +40,80 @@ const userSchema = new mongoose.Schema(
         lastLogin: {
             type: Date,
         },
+
+        // models/User.js — add these fields to schema
+        profilePicture: {
+            type: String,
+            default: '',
+            // Cloudinary URL stored here
+        },
+
+        bio: {
+            type: String,
+            maxlength: [500, 'Bio cannot exceed 500 characters'],
+            default: '',
+        },
+
+        skills: {
+            type: [String],
+            default: [],
+        },
+
+        resumeUrl: {
+            type: String,
+            default: '',
+            // Cloudinary PDF URL stored here
+        },
+
+        location: {
+            type: String,
+            default: '',
+        },
+
+        github: {
+            type: String,
+            default: '',
+        },
+
+        linkedin: {
+            type: String,
+            default: '',
+        },
+
+        portfolio: {
+            type: String,
+            default: '',
+        },
+
+
+
     },
+
+
+
+
+
     {
         timestamps: true,
     }
+
+
+
+
+
 );
 
 
-userSchema.pre('save', async function (next) {
 
-    if (!this.isModified('password')) return next();
+
+
+userSchema.pre('save', async function () {
+
+    if (!this.isModified('password')) return;
 
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    next();
-}
-
-
-
-);
+});
 
 userSchema.methods.generateToken = function () {
     return jwt.sign(
