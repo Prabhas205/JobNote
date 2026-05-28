@@ -1,127 +1,137 @@
+// src/components/JobCard.jsx
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 
-function JobCard({ 
-    title, 
-    company, 
-    location, 
-    jobType, 
-    workMode, 
-    experience, 
-    salary, 
-    skills = [], 
-    isActive = true, 
-    views, 
-    jobId, 
-    description, 
-    onApply 
+const JobCard = memo(function JobCard({
+    title = 'Untitled Job',
+    company = 'Unknown Company',
+    location = 'Not specified',
+    jobType = 'full-time',
+    workMode = 'onsite',
+    experience = 'fresher',
+    salary = { min: 0, max: 0, isPublic: false },
+    skills = [],
+    isActive = true,
+    views = 0,
+    jobId,
+    onApply,
 }) {
-    // Format salary logic
-    const formatSalary = (sal) => {
-        if (!sal || !sal.isPublic) return 'Not disclosed';
-        if (sal.min === sal.max) return `${(sal.min / 100000).toFixed(1)}L`;
-        return `${(sal.min / 100000).toFixed(1)}L - ${(sal.max / 100000).toFixed(1)}L`;
-    };
+
+    const jobTypeBadge = {
+        'full-time': 'badge-blue',
+        'part-time': 'badge-green',
+        'contract': 'badge-yellow',
+        'internship': 'badge-purple',
+    }[jobType] ?? 'badge-blue';
+
+    const workModeIcon = {
+        remote: '🌐',
+        hybrid: '🔀',
+        onsite: '🏢',
+    }[workMode] ?? '🏢';
 
     return (
-        <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-            border: '1px solid #f3f4f6',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            transition: 'transform 0.2s',
-        }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', margin: '0 0 8px 0' }}>
+        <div className={`card mb-4 ${!isActive ? 'opacity-60' : ''}`}>
+
+            {/* Header */}
+            <div className="flex justify-between items-start mb-4">
+                <div className="flex-1 min-w-0 pr-4">
+                    <h2 className="text-lg font-bold text-gray-900 mb-1 truncate">
                         {title}
-                        {isActive && <span style={{ marginLeft: '8px', fontSize: '12px', background: '#e0e7ff', color: '#4f46e5', padding: '2px 8px', borderRadius: '12px' }}>Hiring</span>}
-                    </h3>
-                    <p style={{ color: '#6b7280', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>🏢 {company || 'Unknown Company'}</span>
-                        <span>·</span>
-                        <span>📍 {location || 'Remote'}</span>
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                        🏢 <span className="font-medium text-gray-700">{company}</span>
+                        <span className="mx-2">·</span>
+                        📍 {location}
                     </p>
                 </div>
-                <span style={{
-                    background: isActive ? '#dcfce7' : '#fee2e2',
-                    color: isActive ? '#15803d' : '#dc2626',
-                    padding: '4px 12px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: '600'
-                }}>
-                    {isActive ? 'Active' : 'Closed'}
+
+                {/* Status Badge */}
+                <span className={`badge flex-shrink-0 ${isActive ? 'badge-green' : 'badge-red'
+                    }`}>
+                    {isActive ? '● Hiring' : '● Closed'}
                 </span>
             </div>
 
-            <p style={{ color: '#4b5563', fontSize: '14px', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {description}
-            </p>
-
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {skills.map(skill => (
-                    <span key={skill} style={{ background: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', color: '#4b5563' }}>
-                        {skill}
-                    </span>
-                ))}
+            {/* Tags */}
+            <div className="flex flex-wrap gap-2 mb-4">
+                <span className={`badge ${jobTypeBadge}`}>
+                    {jobType}
+                </span>
+                <span className="badge badge-blue">
+                    {workModeIcon} {workMode}
+                </span>
+                <span className="badge bg-gray-100 text-gray-600">
+                    🎯 {experience}
+                </span>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                <span style={{ background: '#fef3c7', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', color: '#92400e' }}>
-                    💰 {formatSalary(salary)}
-                </span>
-                <span style={{ background: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', color: '#4b5563' }}>
-                    🕒 {jobType || 'Full-time'}
-                </span>
-                {workMode && (
-                    <span style={{ background: '#f3f4f6', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', color: '#4b5563' }}>
-                        💼 {workMode}
-                    </span>
-                )}
-            </div>
+            {/* Skills */}
+            {skills.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                    {skills.slice(0, 5).map((skill, i) => (
+                        <span
+                            key={i}
+                            className="px-2 py-1 bg-blue-50 text-blue-700 text-xs
+                         rounded-md border border-blue-100 font-medium"
+                        >
+                            {skill}
+                        </span>
+                    ))}
+                    {skills.length > 5 && (
+                        <span className="px-2 py-1 text-gray-400 text-xs self-center">
+                            +{skills.length - 5} more
+                        </span>
+                    )}
+                </div>
+            )}
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid #f3f4f6' }}>
-                <Link
-                    to={`/jobs/${jobId}`}
-                    style={{
-                        padding: '10px 16px',
-                        background: '#eff6ff',
-                        color: '#2563eb',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        flex: 1,
-                        textAlign: 'center'
-                    }}
-                >
-                    View Details
-                </Link>
+            {/* Footer */}
+            <div className="flex items-center justify-between
+                      pt-4 border-t border-gray-50">
 
-                <button
-                    onClick={onApply}
-                    disabled={!isActive}
-                    style={{
-                        background: isActive ? '#2563eb' : '#9ca3af',
-                        color: 'white',
-                        border: 'none',
-                        padding: '10px 20px',
-                        borderRadius: '8px',
-                        cursor: isActive ? 'pointer' : 'not-allowed',
-                        fontWeight: 'bold',
-                        fontSize: '14px',
-                        flex: 1
-                    }}
-                >
-                    {isActive ? 'Apply Now →' : 'Closed'}
-                </button>
+                {/* Salary */}
+                <div>
+                    {salary?.isPublic && salary?.max > 0 ? (
+                        <p className="text-sm font-bold text-green-600">
+                            💰 ₹{(salary.min / 100000).toFixed(1)}L
+                            – ₹{(salary.max / 100000).toFixed(1)}L / yr
+                        </p>
+                    ) : (
+                        <p className="text-sm text-gray-400">
+                            💰 Salary not disclosed
+                        </p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-0.5">
+                        👁 {views} views
+                    </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                    <Link
+                        to={`/jobs/${jobId}`}
+                        className="px-3 py-2 text-sm font-medium text-blue-600
+                       bg-blue-50 rounded-lg hover:bg-blue-100
+                       transition-colors duration-200"
+                    >
+                        Details
+                    </Link>
+                    <button
+                        onClick={onApply}
+                        disabled={!isActive}
+                        className={`px-4 py-2 text-sm font-bold rounded-lg
+                        transition-colors duration-200 ${isActive
+                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
+                    >
+                        {isActive ? 'Apply →' : 'Closed'}
+                    </button>
+                </div>
             </div>
         </div>
     );
-}
+});
 
 export default JobCard;
