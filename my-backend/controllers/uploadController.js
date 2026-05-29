@@ -38,7 +38,7 @@ export const uploadProfilePicture = async (req, res) => {
         const updatedUser = await User.findByIdAndUpdate(
             req.user._id,
             { profilePicture: imageUrl },
-            { new: true }
+            { returnDocument: 'after' }
         ).select('-password');
 
         console.log(`✅ Profile picture uploaded: ${req.user.email}`);
@@ -93,7 +93,7 @@ export const uploadResumePDF = async (req, res) => {
         const updatedUser = await User.findByIdAndUpdate(
             req.user._id,
             { resumeUrl },
-            { new: true }
+            { returnDocument: 'after' }
         ).select('-password');
 
         console.log(`✅ Resume uploaded: ${req.user.email}`);
@@ -163,7 +163,7 @@ export const uploadCompanyLogo = async (req, res) => {
         const updatedCompany = await Company.findByIdAndUpdate(
             companyId,
             { logo: logoUrl },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         console.log(`✅ Company logo uploaded: ${company.name}`);

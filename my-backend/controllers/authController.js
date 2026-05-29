@@ -1,4 +1,6 @@
 import User from '../models/User.js';
+import sendEmail from '../utils/sendEmail.js';
+import { welcomeEmail } from '../utils/emailTemplates.js';
 
 const sendTokenResponse = (user, statusCode, res) => {
 
@@ -50,6 +52,14 @@ export const register = async (req, res, next) => {
             password,  // plain text here → hook hashes it before save
             role,      // optional — defaults to 'user' if not sent
         });
+
+        // ─── Send welcome email (async — don't await) ───
+        sendEmail({
+            to: user.email,
+            ...welcomeEmail(user),
+        }).catch(err => console.error('Welcome email failed:', err.message));
+        // ↑ fire and forget — don't wait for email
+        //   don't let email failure block registration
 
         console.log(`✅ Registered: ${user.email} (${user.role})`);
 
@@ -181,7 +191,7 @@ export const updateMe = async (req, res, next) => {
         const user = await User.findByIdAndUpdate(
             req.user._id,
             updateData,
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         );
 
         res.status(200).json({

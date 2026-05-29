@@ -115,7 +115,7 @@ export const updateCompany = async (req, res) => {
         company = await Company.findByIdAndUpdate(
             req.params.id,
             { $set: req.body },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         );
 
         res.json({

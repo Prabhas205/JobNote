@@ -4,6 +4,11 @@
 import JobPost from '../models/JobPost.js';
 import Application from '../models/Application.js';
 import Company from '../models/Company.js';
+import sendEmail from '../utils/sendEmail.js';
+import {
+    applicationConfirmEmail,
+    newApplicationEmailToEmployer,
+} from '../utils/emailTemplates.js';
 
 export const getAllJobs = async (req, res) => {
     try {
@@ -35,7 +40,7 @@ export const updateJob = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Not authorized to update this job' });
         }
         
-        job = await JobPost.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        job = await JobPost.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after', runValidators: true });
         res.status(200).json({ success: true, data: job });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -94,7 +99,8 @@ export const applyToJob = async (req, res) => {
         }
 
         const job = await JobPost.findById(req.params.id)
-            .populate('postedBy', 'name email');
+            .populate('postedBy', 'name email')
+            .populate('company', 'name');
 
         if (!job) {
             return res.status(404).json({
@@ -127,7 +133,7 @@ export const applyToJob = async (req, res) => {
         const application = await Application.create({
             applicant: req.user._id,
             jobPost: job._id,
-            company: job.company,
+            company: job.company._id,
             coverLetter: coverLetter ?? '',
             resumeUrl,
         });
@@ -161,6 +167,20 @@ export const applyToJob = async (req, res) => {
                 message: 'New applicant just applied!',
                 timestamp: new Date(),
             });
+        }
+
+        // ─── Send confirmation email to applicant ───
+        sendEmail({
+            to: req.user.email,
+            ...applicationConfirmEmail(req.user, job, job.company),
+        }).catch(err => console.error('Application confirm email failed:', err));
+
+        // ─── Send notification email to employer ───
+        if (job.postedBy?.email) {
+            sendEmail({
+                to: job.postedBy.email,
+                ...newApplicationEmailToEmployer(job.postedBy, req.user, job),
+            }).catch(err => console.error('Employer notification email failed:', err));
         }
 
         res.status(201).json({

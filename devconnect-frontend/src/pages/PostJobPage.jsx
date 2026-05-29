@@ -1,5 +1,5 @@
 // src/pages/PostJobPage.jsx
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -73,6 +73,27 @@ function PostJobPage() {
     const createLoading = useAppSelector(selectCreateLoading);
     const createError = useAppSelector(selectCreateError);
     const createSuccess = useAppSelector(selectCreateSuccess);
+
+    const [companies, setCompanies] = useState([]);
+    const [loadingCompanies, setLoadingCompanies] = useState(true);
+
+    // Fetch companies for dropdown
+    useEffect(() => {
+        const fetchCompanies = async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/companies?limit=100');
+                const data = await res.json();
+                if (data.success) {
+                    setCompanies(data.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch companies:', error);
+            } finally {
+                setLoadingCompanies(false);
+            }
+        };
+        fetchCompanies();
+    }, []);
 
     const {
         register,
@@ -192,12 +213,21 @@ function PostJobPage() {
                     <form onSubmit={handleSubmit(onSubmit)}>
 
                         {/* Company ID */}
-                        <label style={labelStyle}>Company ID</label>
-                        <input
+                        <label style={labelStyle}>Company</label>
+                        <select
                             {...register('company')}
-                            placeholder="Paste your company MongoDB _id here"
-                            style={inputStyle(!!errors.company)}
-                        />
+                            style={{ ...inputStyle(!!errors.company), cursor: 'pointer' }}
+                            disabled={loadingCompanies}
+                        >
+                            <option value="">
+                                {loadingCompanies ? 'Loading companies...' : 'Select a company'}
+                            </option>
+                            {companies.map(company => (
+                                <option key={company._id} value={company._id}>
+                                    {company.name}
+                                </option>
+                            ))}
+                        </select>
                         {fieldError(errors.company)}
 
                         {/* Title */}

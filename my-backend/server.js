@@ -11,6 +11,8 @@ import authRoutes from './routes/authRoutes.js';
 import companyRoutes from './routes/companyRoutes.js';
 import jobRoutes from './routes/jobRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import applicationRoutes from './routes/applicationRoutes.js';
+import { verifyEmailConnection } from './config/email.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -26,6 +28,8 @@ const io = new Server(httpServer, {
 app.set('io', io);
 
 connectDB();
+// ↑ verify email on startup — logs success/fail
+verifyEmailConnection();
 
 // ─── CORS ───
 app.use(cors({
@@ -79,6 +83,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/applications', applicationRoutes);
 
 // ─── Socket.io ───
 io.on('connection', (socket) => {
