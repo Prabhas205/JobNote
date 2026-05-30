@@ -19,7 +19,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
 const PostJobPage = lazy(() => import('./pages/PostJobPage.jsx'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
-
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
 
 function AppContent() {
   return (
@@ -50,6 +50,12 @@ function AppContent() {
           <Route path="/post-job" element={
             <ProtectedRoute allowedRoles={['employer', 'admin']}>
               <PostJobPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard />
             </ProtectedRoute>
           } />
 

@@ -13,6 +13,8 @@ import jobRoutes from './routes/jobRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
 import { verifyEmailConnection } from './config/email.js';
+import adminRoutes from './routes/adminRoutes.js';
+
 
 const app = express();
 const httpServer = createServer(app);
@@ -43,6 +45,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(requestLogger);
+app.use('/api/admin', adminRoutes);
 
 // ─── FIX 1: Handle HEAD / explicitly ───
 // Render health check uses HEAD request

@@ -114,6 +114,16 @@ function Navbar() {
                                                     </Link>
                                                 ))}
 
+                                                {user?.role === 'admin' && (
+                                                    <Link
+                                                        to="/admin"
+                                                        onClick={() => setMenuOpen(false)}
+                                                        className="flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
+                                                    >
+                                                        🛡️ Admin Dashboard
+                                                    </Link>
+                                                )}
+
                                                 <button
                                                     onClick={handleLogout}
                                                     className="w-full flex items-center px-4 py-2.5 text-sm text-red-600
